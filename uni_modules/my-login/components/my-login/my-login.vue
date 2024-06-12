@@ -5,35 +5,63 @@
 		
 		<!-- 登录按钮 -->
 		<button type = "primary" class = "btn-login" 
-				@click="getPhoneNumber()"> 一键登录 </button>
+				@click="wxLogin"> 一键登录 </button>
 		
 		<view class = "tips-text"> 请登录后进行使用！</view>
 	</view>
 </template>
 
 <script>
-	export default {
-		methods: {
-			// 用户按了允许授权按钮
-			async getPhoneNumber(e) {
-				console.log('获取手机号码Code：', e.detail)
-				if (e.detail.code) {
-					console.log(e.detail.code)
-				} else {
-					// 用户按了拒绝按钮
-					wx.hideLoading()
-					wx.showModal({
-						title: '提示',
-						content: '拒绝授权将无法注册登陆小程序！',
-						showCancel: false,
-						success: (res) => {
-							if (res.confirm) {
-								this.isShowPhone = true
+	export default 
+	{
+		data() 
+		{
+			return {
+				userInfo: null
+			};
+		},
+		
+		methods: 
+		{
+			wxLogin() {
+				uni.login({
+					provider:'weixin',
+					success:res => {
+						uni.getUserInfo({
+							provider:'weixin',
+							success: userInfo => {
+								this.userInfo = userInfo.userInfo;
+								this.sendUserInfoToBackend(this.userInfo);
+							},
+								
+							fail: err => {
+								console.log('获取用户信息失败',err);
 							}
-						}
-					})
-				}
+						});
+					},
+						
+					fail: err => {
+						console.log('微信登录失败',err);
+					}
+				});
 			},
+			
+				
+			sendUserInfoToBackend(userInfo) {
+				uni.request({
+					url: 'http://localhost:9090/login',
+					method:'POST',
+					data: userInfo,
+					success: res=> {
+						this.token = res.data.token;
+						console.log('登录成功');
+					},
+						
+					fail:err => {
+						console.log('登录失败',err);
+					}
+				});
+			}
 		}
 	}
 </script>
@@ -63,3 +91,4 @@
 		color: gray;
 	}
 </style>
+
